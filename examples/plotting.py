@@ -473,10 +473,10 @@ def plot_timeseries_curves(df_timeseries, xlimits = None, lw = 3, timevar = "tim
         ax[i].set_xlim(xlimits)
         
         for tick in ax[i].xaxis.get_major_ticks():
-            tick.label.set_fontsize(14)
+            tick.label1.set_fontsize(14)
     
         for tick in ax[i].yaxis.get_major_ticks():
-            tick.label.set_fontsize(12)
+            tick.label1.set_fontsize(12)
         
         if i == 3:
             ax[i].set_xlabel("Day since infection seeded", size = 18)
@@ -571,14 +571,14 @@ def plot_hist_by_group(df, groupvar, binvar, bins = None, groups = None,
         ax.set_xlim(xlimits)
     
     if xticklabels is not None:
-        ax.set_xticks(bin_list + n_groups/2*width - width/2.)
+        ax.set_xticks(bin_list[:-1] + n_groups/2*width - width/2.)
         ax.set_xticklabels(xticklabels, size = 14)
     
     for tick in ax.xaxis.get_major_ticks():
-        tick.label.set_fontsize(14)
+        tick.label1.set_fontsize(14)
     
     for tick in ax.yaxis.get_major_ticks():
-        tick.label.set_fontsize(14)
+        tick.label1.set_fontsize(14)
     
     return(fig, ax)
 
@@ -637,10 +637,10 @@ def adjust_ticks(ax, xtick_fontsize = 12, ytick_fontsize = 12,
     """
     
     for tick in ax.xaxis.get_major_ticks():
-        tick.label.set_fontsize(xtick_fontsize)
+        tick.label1.set_fontsize(xtick_fontsize)
     
     for tick in ax.yaxis.get_major_ticks():
-        tick.label.set_fontsize(ytick_fontsize)
+        tick.label1.set_fontsize(ytick_fontsize)
     
     if xticklabels is not None:
         ax.set_xticks(np.arange(len(xticklabels)))
@@ -818,10 +818,10 @@ def plot_interactions_by_age(df_interact, groupvar, group_labels,
     ax.set_title(title, size = 20)
     
     for tick in ax.xaxis.get_major_ticks():
-        tick.label.set_fontsize(16)
+        tick.label1.set_fontsize(16)
     
     for tick in ax.yaxis.get_major_ticks():
-        tick.label.set_fontsize(16)
+        tick.label1.set_fontsize(16)
     
     return(fig, ax)
 
@@ -867,7 +867,7 @@ def PlotHistIFRByAge(df,
     ax.set_ylim([0, np.max(heights)*1.1])
     
     if xticklabels is not None:
-        ax.set_xticks(bins)
+        ax.set_xticks(bins[:-1])
         ax.set_xticklabels(xticklabels, size = 12)
     
     ax.set_xlabel(xlabel, size = 18)
@@ -923,13 +923,13 @@ def PlotHistByAge(df,
         
         if axi == (n_groups - 1):
             if xticklabels is not None:
-                ax[axi].set_xticks(bins + 0.425)
+                ax[axi].set_xticks(bins[:-1] + 0.425)
                 ax[axi].set_xticklabels(xticklabels, size = 12)
             else:
-                ax[axi].set_xticks(bins + 0.425)
+                ax[axi].set_xticks(bins[:-1] + 0.425)
                 ax[axi].set_xticklabels(bins, size = 12)
         else:
-            ax[axi].set_xticks(bins + 0.425)
+            ax[axi].set_xticks(bins[:-1] + 0.425)
             ax[axi].set_xticks([])
     
     ax[n_groups-1].set_xlabel(xlabel, size = 18)
@@ -996,10 +996,10 @@ def plot_stacked_hist_by_group(df,
         ax.set_xticklabels(bins)
     
     for tick in ax.xaxis.get_major_ticks():
-        tick.label.set_fontsize(16)
+        tick.label1.set_fontsize(16)
     
     for tick in ax.yaxis.get_major_ticks():
-        tick.label.set_fontsize(16)
+        tick.label1.set_fontsize(16)
     
     return(fig, ax)
 

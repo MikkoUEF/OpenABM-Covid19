@@ -16,7 +16,7 @@ CFLAGS  = gsl_config('--cflags')
 LDFLAGS = gsl_config('--libs')
 
 covid19_module = Extension(
-    "_covid19",
+    "_OpenABMCovid19",
     sources=[
         "covid19_wrap.c",
         "constant.c",

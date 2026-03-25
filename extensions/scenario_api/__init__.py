@@ -1,5 +1,12 @@
 from .blocks import ParameterBlock, create_block, merge_blocks
-from .networks import NetworkSpec, create_network_spec
+from .networks import (
+    NetworkSpec,
+    create_network_spec,
+    validate_network_spec,
+    validate_network_specs,
+    network_spec_to_dict,
+    group_network_specs_by_kind,
+)
 from .events import TimelineEvent, create_event, group_events_by_time
 from .interventions import (
     Intervention,
@@ -23,7 +30,8 @@ from .data import ObservedDataset, load_observed_dataset, dataset_to_timeseries
 
 __all__ = [
     "ParameterBlock", "create_block", "merge_blocks",
-    "NetworkSpec", "create_network_spec",
+    "NetworkSpec", "create_network_spec", "validate_network_spec",
+    "validate_network_specs", "network_spec_to_dict", "group_network_specs_by_kind",
     "TimelineEvent", "create_event", "group_events_by_time",
     "Intervention", "ParameterIntervention", "create_parameter_intervention",
     "intervention_to_events", "interventions_to_events",

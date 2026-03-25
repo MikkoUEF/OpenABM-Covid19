@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, Any, List
 from .scenarios import Scenario
-from .networks import NetworkSpec
+from .networks import NetworkSpec, validate_network_specs
 from .events import TimelineEvent, group_events_by_time
 from .blocks import merge_blocks
 from .interventions import interventions_to_events
@@ -26,6 +26,7 @@ def resolve_scenario(scenario: Scenario) -> ResolvedScenario:
     resolved_params = scenario.base_params.copy()
     merged_block_params = merge_blocks(scenario.blocks)
     resolved_params.update(merged_block_params)
+    validate_network_specs(scenario.network_specs)
     intervention_events = interventions_to_events(
         scenario.interventions,
         base_params=resolved_params,

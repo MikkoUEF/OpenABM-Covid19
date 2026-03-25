@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, Any, List, Optional
 from .blocks import ParameterBlock
-from .networks import NetworkSpec
+from .networks import NetworkSpec, validate_network_spec, validate_network_specs
 from .events import TimelineEvent
 from .interventions import Intervention
 
@@ -42,6 +42,7 @@ def create_scenario(
     metadata: Dict[str, Any] = None,
 ) -> Scenario:
     """Create a scenario."""
+    validate_network_specs(list(network_specs or []))
     return Scenario(
         name=name,
         base_params=dict(base_params),
@@ -86,6 +87,7 @@ def add_event(scenario: Scenario, event: TimelineEvent) -> Scenario:
 
 def add_network_spec(scenario: Scenario, network_spec: NetworkSpec) -> Scenario:
     """Add a network spec to the scenario."""
+    validate_network_spec(network_spec)
     new_specs = scenario.network_specs + [network_spec]
     return Scenario(
         name=scenario.name,

@@ -443,7 +443,7 @@ def metrics_one_scenario(dfs, scenario_name="Scenario"):
     _metric_dfs = []
 
     table_name = "Total GDP"
-    _df = dfs[table_name].resample("1Q").mean().iloc[1:].to_frame(name=scenario_name)
+    _df = dfs[table_name].resample("1QE").mean().iloc[1:].to_frame(name=scenario_name)
     _df = _df.reset_index().rename(columns={"index": "Period"})
     _df["Metric"] = table_name
     _df["Period"] = _df["Period"].replace(
@@ -456,7 +456,7 @@ def metrics_one_scenario(dfs, scenario_name="Scenario"):
     _metric_dfs.append(_df)
 
     table_name = "Household Expenditure Reduction (Total)"
-    _df = dfs[table_name].resample("1Q").mean().iloc[1:].to_frame(name=scenario_name)
+    _df = dfs[table_name].resample("1QE").mean().iloc[1:].to_frame(name=scenario_name)
     _df = _df.reset_index().rename(columns={"index": "Period"})
     _df["Metric"] = table_name
     _df["Period"] = _df["Period"].replace(
@@ -469,7 +469,7 @@ def metrics_one_scenario(dfs, scenario_name="Scenario"):
     _metric_dfs.append(_df)
 
     table_name = "Capital Stock"
-    _df = dfs[table_name].resample("1Q").mean().iloc[1:].to_frame(name=scenario_name)
+    _df = dfs[table_name].resample("1QE").mean().iloc[1:].to_frame(name=scenario_name)
     _df = _df.reset_index().rename(columns={"index": "Period"})
     _df["Metric"] = table_name
     _df["Period"] = _df["Period"].replace(
@@ -482,7 +482,7 @@ def metrics_one_scenario(dfs, scenario_name="Scenario"):
     _metric_dfs.append(_df)
 
     table_name = "Unemployed vs Furloughed"
-    _mdf = dfs[table_name].resample("1Q").mean().iloc[1:]
+    _mdf = dfs[table_name].resample("1QE").mean().iloc[1:]
 
     _df = _mdf["unemployed"].to_frame(name=scenario_name)
     _df = _df.reset_index().rename(columns={"index": "Period"})

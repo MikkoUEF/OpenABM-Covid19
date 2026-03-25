@@ -16,8 +16,9 @@ import numpy as np, pandas as pd
 from scipy import optimize
 from scipy.stats import binom
 from math import sqrt, ceil
-from numpy.core.numeric import NaN
 from random import randrange
+
+NaN = float('nan')
 
 from model import OccupationNetworkEnum, VaccineTypesEnum, VaccineStatusEnum, VaccineSchedule, EVENT_TYPES
 from . import constant
@@ -2006,39 +2007,39 @@ class TestClass(object):
         df_trace_symp_t  = df_trace_symp_t[ (df_trace_symp_t.n_per_index.isna())]
         
         # add the quarantine status of all the traced people 
-        df_quar_symp  = df_indiv_symp.loc[:,{"ID","quarantined"}]
+        df_quar_symp  = df_indiv_symp.loc[:,["ID","quarantined"]]
         df_trace_symp_t  = pd.merge( df_trace_symp_t, df_quar_symp, how ="left", left_on = "traced_ID", right_on = "ID" )
         
         # calculate the number of amber messages and number of people in quarantine because of them
         df_trace_symp_ID   = df_trace_symp_t.groupby("index_ID").size().reset_index(name="n_conn_amber")
-        df_trace_symp_quar = df_trace_symp_t.loc[:,{"index_ID","quarantined"}].groupby("index_ID").sum()
+        df_trace_symp_quar = df_trace_symp_t.loc[:,["index_ID","quarantined"]].groupby("index_ID").sum()
         df_trace_symp_ID = pd.merge(df_trace_symp_ID, df_trace_symp_quar, on = "index_ID")
         
         # calculate the total number of people quarantined due to the amber messages and total messags
         df_trace_symp_sum = df_trace_symp_ID.sum().reset_index(name= "value")
-        n_amber     = df_trace_symp_sum.loc[ df_trace_symp_sum["index"]=="n_conn_amber",{"value"}].values[0] 
-        n_quar_symp = df_trace_symp_sum.loc[ df_trace_symp_sum["index"]=="quarantined",{"value"}].values[0] 
+        n_amber     = df_trace_symp_sum.loc[ df_trace_symp_sum["index"]=="n_conn_amber",["value"]].values[0] 
+        n_quar_symp = df_trace_symp_sum.loc[ df_trace_symp_sum["index"]=="quarantined",["value"]].values[0] 
         comp_symp   = test_params["quarantine_compliance_traced_symptoms"]
         np.testing.assert_equal( n_amber > 100, True, err_msg = "Not sufficient amber messages to test")
         np.testing.assert_allclose( n_quar_symp, n_amber*comp_symp, atol= max( tol_sd*sqrt(n_amber*comp_symp*(1-comp_symp)), 1 ), err_msg="The wrong number quarantined on an amber message")
         
         # get the list of everyone who had an amber message and did not quarantine
-        df_trace_amber_nq =  df_trace_symp_t[ df_trace_symp_t["quarantined"]==0].loc[:,{"index_ID","traced_ID"}]
+        df_trace_amber_nq =  df_trace_symp_t[ df_trace_symp_t["quarantined"]==0].loc[:,["index_ID","traced_ID"]]
         
         # once a red message has been recieved check look at those who did not previously quarantine
         df_trace_pos_t  = pd.merge(df_trace_amber_nq, df_trace_pos, on = ["index_ID","traced_ID" ])
         df_trace_pos_ID = df_trace_pos_t.groupby("index_ID").size().reset_index(name="n_conn_red")
         
         # add their current quarantine status
-        df_quar_pos    = df_indiv_pos.loc[:,{"ID","quarantined"}]
+        df_quar_pos    = df_indiv_pos.loc[:,["ID","quarantined"]]
         df_trace_pos_t = pd.merge( df_trace_pos_t, df_quar_pos, how ="left", left_on = "traced_ID", right_on = "ID" )
-        df_trace_pos_quar = df_trace_pos_t.loc[:,{"index_ID","quarantined"}].groupby("index_ID").sum()
+        df_trace_pos_quar = df_trace_pos_t.loc[:,["index_ID","quarantined"]].groupby("index_ID").sum()
         df_trace_pos_ID = pd.merge(df_trace_pos_ID, df_trace_pos_quar, on = "index_ID")
         
         # now calculate the totals
         df_trace_pos_sum = df_trace_pos_ID.sum().reset_index(name= "value")
-        n_red       = df_trace_pos_sum.loc[ df_trace_pos_sum["index"]=="n_conn_red",{"value"}].values[0] 
-        n_quar_pos  = df_trace_pos_sum.loc[ df_trace_pos_sum["index"]=="quarantined",{"value"}].values[0] 
+        n_red       = df_trace_pos_sum.loc[ df_trace_pos_sum["index"]=="n_conn_red",["value"]].values[0] 
+        n_quar_pos  = df_trace_pos_sum.loc[ df_trace_pos_sum["index"]=="quarantined",["value"]].values[0] 
         comp_pos  = test_params["quarantine_compliance_traced_positive"]
         np.testing.assert_equal( n_red > 100, True, err_msg = "Not sufficient red messages to non-quarantiners to test")
         np.testing.assert_allclose( n_quar_pos, n_red*comp_pos, atol=max(tol_sd*sqrt(n_red*comp_pos*(1-comp_pos)),1), err_msg="The wrong number quarantined on red messages")
@@ -2382,7 +2383,7 @@ class TestClass(object):
             model.write_interactions_file()
 
             df_inter = pd.read_csv(constant.TEST_INTERACTION_FILE)
-            all_pos = all_pos.append(df_inter[ df_inter[ "manual_traceable" ] == 1 ] )
+            all_pos = pd.concat([all_pos, df_inter[ df_inter[ "manual_traceable" ] == 1 ] ], ignore_index=True)
         model.write_trace_tokens()
 
         np.testing.assert_equal( len( all_pos ) > 0, True, "expected manual traces do not exist" )
@@ -2586,7 +2587,7 @@ class TestClass(object):
             model.write_interactions_file()
 
             df_inter = pd.read_csv( constant.TEST_INTERACTION_FILE )
-            all_pos = all_pos.append( df_inter[ df_inter[ "manual_traceable" ] == 1 ] )
+            all_pos = pd.concat([all_pos, df_inter[ df_inter[ "manual_traceable" ] == 1 ]])
 
         np.testing.assert_equal( len( all_pos[ all_pos[ "type" ] == interaction_type  ] ) > 0, True, "expected manual traces do not exist" )
         np.testing.assert_equal( len( all_pos[ all_pos[ "type" ] != interaction_type  ] ) == 0, True, "unexpected manual traces exist" )
@@ -3224,8 +3225,8 @@ class TestClass(object):
         model.write_individual_file()
         df_indiv = pd.read_csv( constant.TEST_INDIVIDUAL_FILE )
         df_trans = model.get_transmissions()
-        df_symp  = df_trans[ df_trans[ "time_symptomatic" ] == time_symp ].loc[:,{"ID_recipient"}].rename( columns = { "ID_recipient":"ID" } )
-        df_symp  = pd.merge(df_symp, df_indiv.loc[:,{"ID","test_status","quarantined"}],on = "ID", how = "left")
+        df_symp  = df_trans[ df_trans[ "time_symptomatic" ] == time_symp ].loc[:,["ID_recipient"]].rename( columns = { "ID_recipient":"ID" } )
+        df_symp  = pd.merge(df_symp, df_indiv.loc[:,["ID","test_status","quarantined"]],on = "ID", how = "left")
         n_symp   = len( df_symp )
         
         # make sure we have sufficient to test
@@ -3250,7 +3251,7 @@ class TestClass(object):
         
         # get updated quarantine status
         df_indiv = pd.read_csv( constant.TEST_INDIVIDUAL_FILE )
-        df_indiv = df_indiv.loc[:,{"ID","quarantined","current_status"}].rename(columns={"quarantined":"quarantined_after_test"})    
+        df_indiv = df_indiv.loc[:,["ID","quarantined","current_status"]].rename(columns={"quarantined":"quarantined_after_test"})    
         df_symp  = pd.merge( df_symp[ (df_symp["test_status"] == constant.TEST_ORDERED)], df_indiv, on = 'ID')
         
         # filter hospitalised people who don't quarantine

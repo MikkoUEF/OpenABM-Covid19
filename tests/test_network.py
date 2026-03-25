@@ -824,7 +824,7 @@ class TestClass(object):
             model.write_interactions_file()
             df = pd.read_csv(constant.TEST_INTERACTION_FILE)
             df[ "time" ] = time + 1
-            df_inter = df_inter.append( df )
+            df_inter = pd.concat([df_inter, df], ignore_index=True)
   
         df_inter = df_inter[ df_inter[ "type" ] == constant.OCCUPATION ]
   
@@ -843,7 +843,7 @@ class TestClass(object):
         mean_by_type = [ test_params["mean_work_interactions_child"],test_params["mean_work_interactions_adult"],test_params["mean_work_interactions_elderly"]]
         
         for network in constant.NETWORKS:
-            actual   = df_unique.loc[network,{"N_conn"}]["N_conn"]
+            actual   = df_unique.loc[network,["N_conn"]]["N_conn"]
             expected = mean_by_type[constant.NETWORK_TYPE_MAP[network]]/test_params["daily_fraction_work"]
             np.testing.assert_allclose(actual,expected,rtol=tol,err_msg="Expected mean unique occupational contacts over multiple days not as expected")
            
@@ -958,7 +958,7 @@ class TestClass(object):
             model.write_interactions_file()
             df = pd.read_csv(constant.TEST_INTERACTION_FILE)
             df[ "time" ] = time + 1
-            df_inter = df_inter.append( df )
+            df_inter = pd.concat([df_inter, df], ignore_index=True)
 
         df_inter = df_inter[ df_inter[ "type" ] == constant.OCCUPATION ]
 
@@ -983,7 +983,7 @@ class TestClass(object):
         mean_by_type = [ test_params["mean_work_interactions_child"],test_params["mean_work_interactions_adult"],test_params["mean_work_interactions_elderly"]]
 
         for network in range(10): # 10 custom occupation networks
-            actual   = df_unique.loc[network,{"N_conn"}]["N_conn"]
+            actual   = df_unique.loc[network, "N_conn"]
             expected = min( connection_upper_bound,
                             mean_by_type[constant.CUSTOM_NETWORK_TYPE_MAP[network]]/test_params["daily_fraction_work"])
             if expected == connection_upper_bound:
@@ -1103,9 +1103,9 @@ class TestClass(object):
         np.testing.assert_equal( np.sum( np.abs( df_comb[ "N"] -  df_comb[ "N_inter2"] ) > 0 ) <= 1, True, err_msg = "People with incorrect number of interactions" )
  
         # check the random connections has changed
-        df_inter = df_inter[ df_inter[ "network_id"] == network_id ].loc[:,{"ID_1", "ID_2"}]
+        df_inter = df_inter[ df_inter[ "network_id"] == network_id ].loc[:,["ID_1", "ID_2"]]
         df_inter["step1"] = True
-        df_inter2 = df_inter2[ df_inter2[ "network_id"] == network_id ].loc[:,{"ID_1", "ID_2"}]
+        df_inter2 = df_inter2[ df_inter2[ "network_id"] == network_id ].loc[:,["ID_1", "ID_2"]]
         df_inter2["step2"] = True
         inter = pd.merge( df_inter, df_inter2, on = ["ID_1", "ID_2"], how = "outer" )
         inter = inter.replace( 'NaN', False )

@@ -29,7 +29,7 @@ def get_quarterly_gdp_decline(
 
     return pd.concat(
         [
-            s_gdp_decline_simu.resample("1Q").last().rename("GDP decline simulation"),
+            s_gdp_decline_simu.resample("1QE").last().rename("GDP decline simulation"),
             pd.Series(GDP_REDUCTION_EST).rename("GDP decline estimates"),
         ],
         axis=1,
@@ -61,7 +61,7 @@ def get_quarterly_demand_decline(
 
     return pd.concat(
         [
-            s_demand_decline_simu.resample("1Q")
+            s_demand_decline_simu.resample("1QE")
             .last()
             .rename("Demand decline simulation"),
             pd.Series(DEMAND_REDUCTION_EST).rename("Demand decline estimates"),

@@ -1,7 +1,21 @@
 from .blocks import ParameterBlock, create_block, merge_blocks
 from .networks import NetworkSpec, create_network_spec
 from .events import TimelineEvent, create_event, group_events_by_time
-from .scenarios import Scenario, create_scenario, add_block, add_event, add_network_spec
+from .interventions import (
+    Intervention,
+    ParameterIntervention,
+    create_parameter_intervention,
+    intervention_to_events,
+    interventions_to_events,
+)
+from .scenarios import (
+    Scenario,
+    create_scenario,
+    add_block,
+    add_event,
+    add_network_spec,
+    add_intervention,
+)
 from .resolver import ResolvedScenario, resolve_scenario
 from .runner import SimulationResult, apply_event_to_params, run_scenario
 from .results import TimeSeries, result_to_timeseries, align_timeseries
@@ -11,7 +25,9 @@ __all__ = [
     "ParameterBlock", "create_block", "merge_blocks",
     "NetworkSpec", "create_network_spec",
     "TimelineEvent", "create_event", "group_events_by_time",
-    "Scenario", "create_scenario", "add_block", "add_event", "add_network_spec",
+    "Intervention", "ParameterIntervention", "create_parameter_intervention",
+    "intervention_to_events", "interventions_to_events",
+    "Scenario", "create_scenario", "add_block", "add_event", "add_network_spec", "add_intervention",
     "ResolvedScenario", "resolve_scenario",
     "SimulationResult", "apply_event_to_params", "run_scenario",
     "TimeSeries", "result_to_timeseries", "align_timeseries",

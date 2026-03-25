@@ -4,6 +4,7 @@ from .scenarios import Scenario
 from .networks import NetworkSpec
 from .events import TimelineEvent, group_events_by_time
 from .blocks import merge_blocks
+from .interventions import interventions_to_events
 
 
 @dataclass
@@ -25,7 +26,12 @@ def resolve_scenario(scenario: Scenario) -> ResolvedScenario:
     resolved_params = scenario.base_params.copy()
     merged_block_params = merge_blocks(scenario.blocks)
     resolved_params.update(merged_block_params)
-    events_by_time = group_events_by_time(scenario.events)
+    intervention_events = interventions_to_events(
+        scenario.interventions,
+        base_params=resolved_params,
+    )
+    all_events = list(scenario.events) + intervention_events
+    events_by_time = group_events_by_time(all_events)
     return ResolvedScenario(
         name=scenario.name,
         resolved_params=resolved_params,

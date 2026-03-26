@@ -27,3 +27,19 @@ Kevyt operatiivinen tilannekortti jatkamiseen katkoksien yli.
 - Mita tehtiin viimeksi: interventiokerroksen reseptin toteutus + notebookin import/plot-yhteensopivuuskorjaukset + kernel-jumien katkaisu.
 - Seuraava konkreettinen askel: aja notebook puhtaalta kernelilta (`Run All`) ja tee sitten kohdennettu commit vain interventiokerroksen tiedostoista.
 - Mahdolliset riskit / huomiot: ympaiston `matplotlib==3.2.2` voi aiheuttaa yhteensopivuusreunatapauksia; notebookissa kaytetaan turvallista `to_numpy()`-plottausta.
+
+## Entry 2026-03-26 18:22:58 UTC
+- Paivamaara ja aika (UTC): 2026-03-26 18:22:58 UTC
+- Viimeisin valmis commit: `8f42e16 Add intervention layer notebook checkpoint and worklog`
+- Typuun nykytila (muokatut/uudet tiedostot): intervention layer -muutokset commitissa, ei uusia muutoksia naihin tiedostoihin.
+- Mita tehtiin viimeksi: `extensions/notebooks/intervention_layer_test.ipynb` ajettiin onnistuneesti loppuun.
+- Seuraava konkreettinen askel: tee pieni worklog-commit ja push.
+- Mahdolliset riskit / huomiot: notebook-jumit voivat palata, mutta kernelin tappo toimii palautuskeinona.
+
+## Entry 2026-03-26 18:22:58 UTC
+- Paivamaara ja aika (UTC): 2026-03-26 18:22:58 UTC
+- Viimeisin valmis commit: `8f42e16 Add intervention layer notebook checkpoint and worklog`
+- Typuun nykytila (muokatut/uudet tiedostot): intervention layer -muutokset commitissa, ei uusia muutoksia naihin tiedostoihin.
+- Mita tehtiin viimeksi: `extensions/notebooks/intervention_layer_test.ipynb` ajettiin onnistuneesti loppuun.
+- Seuraava konkreettinen askel: tee pieni worklog-commit ja push.
+- Mahdolliset riskit / huomiot: notebook-jumit voivat palata, mutta kernelin tappo toimii palautuskeinona.

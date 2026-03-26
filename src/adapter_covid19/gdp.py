@@ -543,9 +543,9 @@ class CobbDouglasLPSetup:
             ],
             axis=1,
         ).T
-        self.xtilde_iot.index = M
+        self.xtilde_iot.index = list(M)
         # x~[M.K, T] == 0, so we add a small epsilon
-        self.xtilde_iot = np.maximum(self.xtilde_iot, 1e-6)
+        self.xtilde_iot = self.xtilde_iot.clip(lower=1e-6)
         self.ytilde_total_iot = self.ytilde_iot.sum(axis=1)
         self.gamma_d = dtilde_iot.div(
             dtilde_iot.sum(axis=0) + self.xtilde_iot.sum(axis=0)

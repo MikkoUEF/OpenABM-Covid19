@@ -20,11 +20,12 @@ Author: roberthinch
 import pandas as pd
 import numpy as np
 import sys
+import os
 
-sys.path.append("../src/COVID19")
-from model import VaccineSchedule, Model
-from strain import Strain
-from vaccine import Vaccine
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+from COVID19.model import VaccineSchedule, Model
+from COVID19.strain import Strain
+from COVID19.vaccine import Vaccine
           
 if __name__ == '__main__':
     # some OS limit the number of process which can be spawned by default
@@ -108,7 +109,7 @@ if __name__ == '__main__':
         abm.one_time_step()   
         
     results = abm.results
-    results[ "new_infected"] = results[ "total_infected" ].diff()
+    results[ "new_infected"] = results[ "total_infected" ].diff().fillna(0)
     df_res  = results.loc[:,["time", "new_infected", "hospital_admissions"]]
     
     print( df_res.to_numpy().astype(int))

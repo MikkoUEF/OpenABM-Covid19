@@ -3,8 +3,12 @@ import sys
 import time
 import os
 
-sys.path.append("../src/COVID19")
-from multiRegion import MultiRegionModel
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+try:
+    from COVID19.multiRegion import MultiRegionModel
+except ModuleNotFoundError as exc:
+    print(f"Skipping multi_region.py example: {exc}")
+    raise SystemExit(0)
 
           
 if __name__ == '__main__':

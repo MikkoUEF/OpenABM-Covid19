@@ -63,6 +63,22 @@ from .timeline_sources import (
     load_processed_timeline_events_table,
     download_and_save_oxcgrt_finland_timeline,
 )
+from .mapping_profiles import (
+    MaskMappingProfile,
+    ContactPolicyMappingProfile,
+    TestingTracingMappingProfile,
+    default_mask_effectiveness_profiles,
+    default_mask_mapping_profile,
+    default_contact_policy_mapping_profile,
+    default_testing_tracing_mapping_profile,
+)
+from .timeline_mapper import (
+    TestingIntensityIntervention,
+    TracingIntensityIntervention,
+    assign_relative_day_indices,
+    map_timeline_event_to_interventions,
+    map_timeline_events_to_interventions,
+)
 from .openabm_adapter import (
     OpenABMModelAdapter,
     is_openabm_available,
@@ -101,6 +117,12 @@ __all__ = [
     "load_timeline_raw_snapshot", "process_oxcgrt_finland_raw_to_events",
     "save_processed_timeline_events", "load_processed_timeline_events_table",
     "download_and_save_oxcgrt_finland_timeline",
+    "MaskMappingProfile", "ContactPolicyMappingProfile", "TestingTracingMappingProfile",
+    "default_mask_effectiveness_profiles", "default_mask_mapping_profile",
+    "default_contact_policy_mapping_profile", "default_testing_tracing_mapping_profile",
+    "TestingIntensityIntervention", "TracingIntensityIntervention",
+    "assign_relative_day_indices", "map_timeline_event_to_interventions",
+    "map_timeline_events_to_interventions",
     "OpenABMModelAdapter", "is_openabm_available", "supported_runtime_update_params",
     "resolved_params_to_openabm_params", "network_specs_to_openabm_config",
     "create_openabm_model", "extract_openabm_outputs", "create_openabm_runner_components",

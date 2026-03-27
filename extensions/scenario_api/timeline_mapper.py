@@ -243,3 +243,29 @@ def map_timeline_events_to_interventions(
             )
         )
     return output
+
+
+def load_finland_timeline_interventions(
+    processed_timeline_path: str,
+    reference_start_date: str,
+    mask_mapping_profile: MaskMappingProfile,
+    contact_mapping_profile: ContactPolicyMappingProfile,
+    testing_tracing_mapping_profile: Optional[TestingTracingMappingProfile] = None,
+    mask_profiles: Optional[Dict[str, MaskProfile]] = None,
+    event_types: Optional[Sequence[str]] = None,
+) -> List[Intervention]:
+    """Load normalized Finland timeline rows from local processed file and map to interventions."""
+    from .timeline import load_timeline_events_from_processed
+
+    events = load_timeline_events_from_processed(processed_timeline_path)
+    if event_types:
+        event_type_set = set(event_types)
+        events = [e for e in events if e.event_type in event_type_set]
+    return map_timeline_events_to_interventions(
+        events=events,
+        mask_mapping_profile=mask_mapping_profile,
+        contact_mapping_profile=contact_mapping_profile,
+        testing_tracing_mapping_profile=testing_tracing_mapping_profile,
+        mask_profiles=mask_profiles,
+        reference_start_date=reference_start_date,
+    )

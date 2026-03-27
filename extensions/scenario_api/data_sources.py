@@ -286,3 +286,37 @@ def thl_dataset_to_timeseries(
     if not series_list:
         raise ValueError("No time series could be created from dataset")
     return sorted(series_list, key=lambda ts: ts.name)
+
+
+def load_observed_cases_timeseries_for_region(
+    processed_path: Union[str, Path],
+    region: str,
+    region_level: str = "hospital_district",
+) -> TimeSeries:
+    """Load one THL observed cases time series for a given region."""
+    frame = load_processed_table(processed_path)
+    selected = frame[
+        (frame["variable"] == "cases")
+        & (frame["region_level"] == region_level)
+        & (frame["region"] == region)
+    ].copy()
+    if selected.empty:
+        raise ValueError(
+            f"Missing observed cases for region '{region}' at region_level '{region_level}'"
+        )
+    selected = selected.sort_values("date")
+    return TimeSeries(
+        name=f"observed_cases_{region.replace(' ', '_')}",
+        times=[d.isoformat() for d in selected["date"].tolist()],
+        values=selected["value"].astype(float).tolist(),
+        variable="cases",
+        source_type="observed",
+        source_name="THL",
+        metadata={
+            "region": region,
+            "region_level": region_level,
+            "date_min": selected["date"].min().isoformat(),
+            "date_max": selected["date"].max().isoformat(),
+            "n_points": int(len(selected)),
+        },
+    )

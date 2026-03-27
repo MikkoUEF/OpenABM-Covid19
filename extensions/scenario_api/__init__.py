@@ -30,6 +30,7 @@ from .scenarios import (
 )
 from .resolver import ResolvedScenario, resolve_scenario
 from .runner import SimulationResult, apply_event_to_params, run_scenario
+from .runner import run_single_shp_cases_scenario
 from .results import TimeSeries, result_to_timeseries, align_timeseries
 from .data import ObservedDataset, load_observed_dataset, dataset_to_timeseries
 from .data_sources import (
@@ -44,6 +45,12 @@ from .data_sources import (
     download_and_save_thl_cases_snapshot,
     load_thl_cases_observed_dataset,
     thl_dataset_to_timeseries,
+    load_observed_cases_timeseries_for_region,
+)
+from .region_config import (
+    RegionConfig,
+    population_scale_factor,
+    get_default_shp_region_config,
 )
 from .timeline import (
     TimelineEvent as PolicyTimelineEvent,
@@ -76,6 +83,7 @@ from .timeline_mapper import (
     TestingIntensityIntervention,
     TracingIntensityIntervention,
     assign_relative_day_indices,
+    load_finland_timeline_interventions,
     map_timeline_event_to_interventions,
     map_timeline_events_to_interventions,
 )
@@ -102,13 +110,15 @@ __all__ = [
     "Scenario", "create_scenario", "add_block", "add_event", "add_network_spec", "add_intervention",
     "ResolvedScenario", "resolve_scenario",
     "SimulationResult", "apply_event_to_params", "run_scenario",
+    "run_single_shp_cases_scenario",
     "TimeSeries", "result_to_timeseries", "align_timeseries",
     "ObservedDataset", "load_observed_dataset", "dataset_to_timeseries",
     "THL_DAILY_SUMMARY_PAGE_URL", "fetch_thl_cases_raw", "fetch_thl_deaths_raw",
     "save_raw_snapshot", "load_raw_snapshot",
     "process_thl_cases_raw_to_table", "save_processed_table", "load_processed_table",
     "download_and_save_thl_cases_snapshot", "load_thl_cases_observed_dataset",
-    "thl_dataset_to_timeseries",
+    "thl_dataset_to_timeseries", "load_observed_cases_timeseries_for_region",
+    "RegionConfig", "population_scale_factor", "get_default_shp_region_config",
     "PolicyTimelineEvent", "load_timeline_events_from_processed",
     "timeline_events_to_table", "filter_timeline_events",
     "OXCGRT_COMPACT_CSV_URL", "OXCGRT_EVENT_TYPE_TO_COLUMNS",
@@ -122,7 +132,7 @@ __all__ = [
     "default_contact_policy_mapping_profile", "default_testing_tracing_mapping_profile",
     "TestingIntensityIntervention", "TracingIntensityIntervention",
     "assign_relative_day_indices", "map_timeline_event_to_interventions",
-    "map_timeline_events_to_interventions",
+    "map_timeline_events_to_interventions", "load_finland_timeline_interventions",
     "OpenABMModelAdapter", "is_openabm_available", "supported_runtime_update_params",
     "resolved_params_to_openabm_params", "network_specs_to_openabm_config",
     "create_openabm_model", "extract_openabm_outputs", "create_openabm_runner_components",

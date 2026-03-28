@@ -25,7 +25,15 @@ class RegionConfig:
 _DEFAULT_SHP_POPULATIONS: Dict[str, int] = {
     "Helsinki and Uusimaa Hospital District": 1707216,
     "Pirkanmaa Hospital District": 540000,
-    "Northern Ostrobothnia Hospital District": 413000,
+    "North Ostrobothnia Hospital District": 413000,
+}
+
+_SHP_NAME_ALIASES: Dict[str, str] = {
+    "Helsinki and Uusimaa": "Helsinki and Uusimaa Hospital District",
+    "Pirkanmaa": "Pirkanmaa Hospital District",
+    "North Ostrobothnia": "North Ostrobothnia Hospital District",
+    "Northern Ostrobothnia": "North Ostrobothnia Hospital District",
+    "Northern Ostrobothnia Hospital District": "North Ostrobothnia Hospital District",
 }
 
 
@@ -38,14 +46,17 @@ def population_scale_factor(region_config: RegionConfig) -> float:
 
 
 def get_default_shp_region_config(name: str, simulated_population: int) -> RegionConfig:
-    if name not in _DEFAULT_SHP_POPULATIONS:
+    resolved_name = _SHP_NAME_ALIASES.get(name, name)
+    if resolved_name not in _DEFAULT_SHP_POPULATIONS:
         known = sorted(_DEFAULT_SHP_POPULATIONS.keys())
-        raise ValueError(f"Unknown SHP name '{name}'. Known defaults: {known}")
+        aliases = sorted(_SHP_NAME_ALIASES.keys())
+        raise ValueError(
+            f"Unknown SHP name '{name}'. Known defaults: {known}. Known aliases: {aliases}"
+        )
     return RegionConfig(
-        name=name,
+        name=resolved_name,
         region_level="hospital_district",
-        real_population=int(_DEFAULT_SHP_POPULATIONS[name]),
+        real_population=int(_DEFAULT_SHP_POPULATIONS[resolved_name]),
         simulated_population=int(simulated_population),
         metadata={"source": "built_in_default"},
     )
-

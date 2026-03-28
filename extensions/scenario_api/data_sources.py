@@ -292,14 +292,25 @@ def load_observed_cases_timeseries_for_region(
     processed_path: Union[str, Path],
     region: str,
     region_level: str = "hospital_district",
+    start_date: Optional[Union[str, date]] = None,
+    end_date: Optional[Union[str, date]] = None,
 ) -> TimeSeries:
     """Load one THL observed cases time series for a given region."""
+    start = _normalize_date(start_date)
+    end = _normalize_date(end_date)
+    if start is not None and end is not None and start > end:
+        raise ValueError("start_date must be <= end_date")
+
     frame = load_processed_table(processed_path)
     selected = frame[
         (frame["variable"] == "cases")
         & (frame["region_level"] == region_level)
         & (frame["region"] == region)
     ].copy()
+    if start is not None:
+        selected = selected[selected["date"] >= start]
+    if end is not None:
+        selected = selected[selected["date"] <= end]
     if selected.empty:
         raise ValueError(
             f"Missing observed cases for region '{region}' at region_level '{region_level}'"

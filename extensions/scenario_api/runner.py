@@ -3,7 +3,7 @@ from typing import Dict, Any, List, Callable, Optional
 from numbers import Number
 from .resolver import ResolvedScenario
 from .events import TimelineEvent
-from .interventions import InterventionSet, compile_network_multipliers
+from .interventions import InterventionSet, compile_network_multipliers, compile_runtime_effects
 from .scenarios import create_scenario
 from .resolver import resolve_scenario
 from .timeline_mapper import map_timeline_events_to_interventions
@@ -15,7 +15,12 @@ from .mapping_profiles import (
 )
 from .interventions import MaskProfile
 from .region_config import RegionConfig, population_scale_factor
-from .openabm_adapter import is_openabm_available, create_openabm_runner_components
+from .openabm_adapter import (
+    is_openabm_available,
+    create_openabm_runner_components,
+    create_openabm_model,
+    apply_runtime_interventions_to_openabm,
+)
 
 
 @dataclass
@@ -142,12 +147,20 @@ def run_single_shp_cases_scenario(
     simulation_steps: Optional[int] = None,
     use_openabm: bool = False,
     network_weights: Optional[Dict[str, float]] = None,
+    model_factory: Optional[Callable] = None,
+    result_extractor: Optional[Callable] = None,
+    initial_infected: int = 100,
+    strict_runtime_updates: bool = True,
 ) -> tuple[SimulationResult, Any]:
     """Run one independent SHP scenario and return raw result plus scaled simulated cases."""
     if region_config.simulated_population <= 0:
         raise ValueError("simulated_population must be > 0")
     if region_config.real_population <= 0:
         raise ValueError("real_population must be > 0")
+    if not isinstance(initial_infected, int):
+        raise ValueError("initial_infected must be an integer")
+    if initial_infected < 0:
+        raise ValueError("initial_infected must be >= 0")
 
     supported_events = [e for e in timeline_events if getattr(e, "event_type", None) in SUPPORTED_EVENT_TYPES]
     skipped_events = len(timeline_events) - len(supported_events)
@@ -188,24 +201,103 @@ def run_single_shp_cases_scenario(
         base_params={
             "relative_transmission": 1.0,
             "testing_rate": 1.0,
+            "initial_infected": int(initial_infected),
         },
         events=transmission_events,
     )
     resolved = resolve_scenario(scenario)
 
-    model_factory = None
-    result_extractor = None
+    selected_model_factory = model_factory
+    selected_result_extractor = result_extractor
     openabm_used = False
-    if use_openabm and is_openabm_available():
-        model_factory, result_extractor = create_openabm_runner_components(resolved)
+    seed_override_applied = False
+    openabm_n_seed_infection = None
+    runtime_diagnostics = {
+        "active_interventions_by_t": [],
+        "compiled_runtime_effects_by_t": [],
+        "applied_effects_by_t": [],
+        "unsupported_effects_by_t": [],
+        "applied_effect_samples": [],
+        "unsupported_effect_samples": [],
+    }
+    if selected_model_factory is None and use_openabm and is_openabm_available():
         openabm_used = True
+    elif selected_model_factory is not None:
+        openabm_used = bool(use_openabm)
 
-    result = run_scenario(
-        resolved_scenario=resolved,
-        steps=steps,
-        model_factory=model_factory,
-        result_extractor=result_extractor,
-    )
+    if openabm_used and selected_model_factory is None:
+        model = create_openabm_model(
+            resolved_scenario=resolved,
+            initial_params=resolved.resolved_params.copy(),
+            strict_runtime_updates=strict_runtime_updates,
+        )
+        openabm_n_seed_infection = model.applied_params.get("n_seed_infection")
+        seed_override_applied = openabm_n_seed_infection == int(initial_infected)
+        raw_outputs: Dict[str, List[float]] = {}
+        for t in range(steps):
+            active_interventions = intervention_set.active_at(t)
+            compiled = compile_runtime_effects(intervention_set, t=t)
+            applied_report = apply_runtime_interventions_to_openabm(
+                model_adapter=model,
+                compiled_effects=compiled,
+                strict=strict_runtime_updates,
+            )
+
+            active_count = len(active_interventions)
+            compiled_count = len(compiled.get("applied_effects", [])) + len(
+                compiled.get("unsupported_effects", [])
+            )
+            applied_count = len(applied_report.get("applied_effects", []))
+            unsupported_count = len(applied_report.get("unsupported_effects", []))
+
+            runtime_diagnostics["active_interventions_by_t"].append(active_count)
+            runtime_diagnostics["compiled_runtime_effects_by_t"].append(compiled_count)
+            runtime_diagnostics["applied_effects_by_t"].append(applied_count)
+            runtime_diagnostics["unsupported_effects_by_t"].append(unsupported_count)
+
+            if len(runtime_diagnostics["applied_effect_samples"]) < 20:
+                runtime_diagnostics["applied_effect_samples"].extend(
+                    applied_report.get("applied_effects", [])[: max(0, 20 - len(runtime_diagnostics["applied_effect_samples"]))]
+                )
+            if len(runtime_diagnostics["unsupported_effect_samples"]) < 20:
+                runtime_diagnostics["unsupported_effect_samples"].extend(
+                    applied_report.get("unsupported_effects", [])[
+                        : max(0, 20 - len(runtime_diagnostics["unsupported_effect_samples"]))
+                    ]
+                )
+
+            step_output = model.step()
+            if selected_result_extractor is not None:
+                extracted = selected_result_extractor(model, step_output, t, resolved.resolved_params.copy())
+            else:
+                extracted = step_output if isinstance(step_output, dict) else model.get_outputs()
+            if not isinstance(extracted, dict):
+                raise ValueError("OpenABM runtime extraction must return dict[str, float]-like object")
+            for key, value in extracted.items():
+                raw_outputs.setdefault(key, []).append(float(value))
+
+        result = SimulationResult(
+            scenario_name=resolved.name,
+            raw_outputs=raw_outputs,
+            metadata={
+                "steps": steps,
+                "final_params": resolved.resolved_params.copy(),
+            },
+        )
+    else:
+        if selected_model_factory is None and use_openabm and is_openabm_available():
+            selected_model_factory, selected_result_extractor = create_openabm_runner_components(
+                resolved,
+                strict_runtime_updates=strict_runtime_updates,
+            )
+            openabm_used = True
+        result = run_scenario(
+            resolved_scenario=resolved,
+            steps=steps,
+            model_factory=selected_model_factory,
+            result_extractor=selected_result_extractor,
+        )
+
     result.metadata = result.metadata or {}
     result.metadata.update(
         {
@@ -218,6 +310,21 @@ def run_single_shp_cases_scenario(
             "timeline_events_skipped": skipped_events,
             "mapped_interventions": len(mapped_interventions),
             "openabm_used": openabm_used,
+            "initial_infected": int(initial_infected),
+            "seed_override_applied": bool(seed_override_applied) if openabm_used else True,
+            "openabm_n_seed_infection": openabm_n_seed_infection,
+            "runtime_diagnostics": {
+                "active_interventions_total": int(sum(runtime_diagnostics["active_interventions_by_t"])),
+                "compiled_runtime_effects_total": int(sum(runtime_diagnostics["compiled_runtime_effects_by_t"])),
+                "applied_effects_total": int(sum(runtime_diagnostics["applied_effects_by_t"])),
+                "unsupported_effects_total": int(sum(runtime_diagnostics["unsupported_effects_by_t"])),
+                "active_interventions_by_t": runtime_diagnostics["active_interventions_by_t"],
+                "compiled_runtime_effects_by_t": runtime_diagnostics["compiled_runtime_effects_by_t"],
+                "applied_effects_by_t": runtime_diagnostics["applied_effects_by_t"],
+                "unsupported_effects_by_t": runtime_diagnostics["unsupported_effects_by_t"],
+                "applied_effect_samples": runtime_diagnostics["applied_effect_samples"][:10],
+                "unsupported_effect_samples": runtime_diagnostics["unsupported_effect_samples"][:10],
+            },
         }
     )
 

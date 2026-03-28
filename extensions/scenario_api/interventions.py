@@ -175,6 +175,13 @@ class InterventionSet:
         return [i for i in self.interventions if i.start <= t < (i.end if i.end is not None else t + 1)]
 
 
+@dataclass
+class CompiledRuntimeEffect:
+    target: str
+    value: float
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
 def compile_network_multipliers(interventions: InterventionSet, t: int) -> Dict[str, float]:
     multipliers: Dict[str, float] = {}
     active = interventions.active_at(t)
@@ -194,6 +201,68 @@ def compile_network_multipliers(interventions: InterventionSet, t: int) -> Dict[
             raise ValueError(f"compiled multiplier for network '{network}' must be in [0,1]")
 
     return multipliers
+
+
+def compile_runtime_effects(
+    interventions: InterventionSet,
+    t: int,
+    school_weight_in_occupation: float = 0.3,
+) -> Dict[str, List[CompiledRuntimeEffect]]:
+    """
+    Compile active interventions into OpenABM runtime-applicable effect objects.
+
+    Returns a dict with:
+    - applied_effects: list of runtime-targeted effects
+    - unsupported_effects: list of explicitly unsupported/placeholder effects
+    """
+    active = interventions.active_at(t)
+    multipliers = compile_network_multipliers(interventions, t=t)
+    work = float(multipliers.get("work", 1.0))
+    school = float(multipliers.get("school", 1.0))
+    random = float(multipliers.get("random", 1.0))
+
+    occupation = work
+    if "school" in multipliers:
+        sw = float(school_weight_in_occupation)
+        occupation = (1.0 - sw) * work + sw * school
+
+    applied_effects = [
+        CompiledRuntimeEffect(
+            target="relative_transmission_occupation",
+            value=float(occupation),
+            metadata={"t": t, "source": "compiled_from_interventions"},
+        ),
+        CompiledRuntimeEffect(
+            target="relative_transmission_random",
+            value=float(random),
+            metadata={"t": t, "source": "compiled_from_interventions"},
+        ),
+    ]
+
+    unsupported_effects: List[CompiledRuntimeEffect] = []
+    for intervention in active:
+        cls_name = intervention.__class__.__name__
+        if cls_name == "TestingIntensityIntervention":
+            unsupported_effects.append(
+                CompiledRuntimeEffect(
+                    target="unsupported:testing_policy",
+                    value=0.0,
+                    metadata={"t": t, "intervention_name": intervention.name},
+                )
+            )
+        elif cls_name == "TracingIntensityIntervention":
+            unsupported_effects.append(
+                CompiledRuntimeEffect(
+                    target="unsupported:contact_tracing",
+                    value=0.0,
+                    metadata={"t": t, "intervention_name": intervention.name},
+                )
+            )
+
+    return {
+        "applied_effects": applied_effects,
+        "unsupported_effects": unsupported_effects,
+    }
 
 
 def create_parameter_intervention(

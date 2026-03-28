@@ -43,3 +43,14 @@ Kevyt operatiivinen tilannekortti jatkamiseen katkoksien yli.
 - Mita tehtiin viimeksi: `extensions/notebooks/intervention_layer_test.ipynb` ajettiin onnistuneesti loppuun.
 - Seuraava konkreettinen askel: tee pieni worklog-commit ja push.
 - Mahdolliset riskit / huomiot: notebook-jumit voivat palata, mutta kernelin tappo toimii palautuskeinona.
+
+## Entry 2026-03-28 00:00:00 UTC
+- Paivamaara ja aika (UTC): 2026-03-28 00:00:00 UTC
+- Viimeisin valmis commit: `5c5f413 Add single-SHP execution bridge mode with notebook`
+- Typuun nykytila (muokatut/uudet tiedostot):
+  - Muokatut (relevantit): `extensions/scenario_api/interventions.py`, `extensions/scenario_api/openabm_adapter.py`, `extensions/scenario_api/runner.py`, `extensions/scenario_api/execution_pipeline.py`, `extensions/scenario_api/__init__.py`
+  - Notebook paivitetty: `extensions/notebooks/end_to_end_multi_shp_test.ipynb`
+  - Repussa on paljon aiempia untracked/muokattuja tiedostoja, joita ei siivottu tassa vaiheessa.
+- Mita tehtiin viimeksi: runtime-interventioiden OpenABM-sovelluspolku korjattu, seed-ohjaus lisatty (`initial_infected`), paivakohtainen `cases` varmistettu, R-proxy helper lisatty, notebookin diagnostiikat (linear+log, runtime-summary, seed-sensitiivisyys, sanity-check) paivitetty.
+- Seuraava konkreettinen askel: aja `extensions/notebooks/end_to_end_multi_shp_test.ipynb` loppuun ja tarkista HUS-rivien runtime-diagnostiikka + kuvaajat.
+- Mahdolliset riskit / huomiot: testing/tracing-efektit raportoidaan viela placeholderina `unsupported_effects`; ne eivat viela vaikuta OpenABM-ajoon.

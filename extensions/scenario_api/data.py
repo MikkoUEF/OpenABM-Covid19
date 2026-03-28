@@ -1,5 +1,8 @@
 from dataclasses import dataclass
-from typing import Dict, Any, List, Union
+from typing import Dict, Any, List, Optional, Union
+
+import pandas as pd
+
 from .results import TimeSeries
 
 
@@ -40,4 +43,33 @@ def dataset_to_timeseries(dataset: ObservedDataset, variable: str, time_key: str
         variable=variable,
         source_type="observed",
         source_name=dataset.name
+    )
+
+
+def smooth_timeseries_moving_average(
+    timeseries: TimeSeries,
+    window: int = 7,
+    new_name: Optional[str] = None,
+) -> TimeSeries:
+    """Return trailing moving-average smoothed time series with same time axis."""
+    if window <= 0:
+        raise ValueError("window must be > 0")
+    if timeseries is None or not getattr(timeseries, "values", None):
+        raise ValueError("timeseries must contain values")
+
+    values = pd.Series([float(v) for v in timeseries.values], dtype=float)
+    smoothed = values.rolling(window=window, min_periods=1).mean()
+
+    return TimeSeries(
+        name=new_name or f"{timeseries.name}_ma{window}",
+        times=list(timeseries.times),
+        values=[float(v) for v in smoothed.tolist()],
+        variable=timeseries.variable,
+        source_type=timeseries.source_type,
+        source_name=timeseries.source_name,
+        metadata={
+            **(timeseries.metadata or {}),
+            "smoothing_method": "moving_average_trailing",
+            "smoothing_window": int(window),
+        },
     )

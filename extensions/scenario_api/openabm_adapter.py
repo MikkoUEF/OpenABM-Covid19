@@ -28,6 +28,12 @@ def resolved_params_to_openabm_params(resolved_params: Dict[str, Any]) -> Dict[s
     translated = dict(resolved_params)
     if "population_size" in translated and "n_total" not in translated:
         translated["n_total"] = translated["population_size"]
+    if "initial_infected" in translated and "n_seed_infection" not in translated:
+        try:
+            translated["n_seed_infection"] = int(translated["initial_infected"])
+        except (TypeError, ValueError) as exc:
+            raise ValueError("initial_infected must be an integer") from exc
+    translated.pop("initial_infected", None)
     return translated
 
 
@@ -62,9 +68,10 @@ class OpenABMModelAdapter:
     model: Any
     applied_params: Dict[str, Any] = field(default_factory=dict)
     outputs_history: Dict[str, List[float]] = field(
-        default_factory=lambda: {"cases": [], "infected": [], "deaths": []}
+        default_factory=lambda: {"cases": [], "infected": [], "deaths": [], "cases_cumulative": []}
     )
     strict_runtime_updates: bool = True
+    _last_total_case: Optional[float] = None
 
     def update_params(self, params: Dict[str, Any]) -> None:
         """Apply runtime-updatable parameter changes to the running OpenABM model."""
@@ -92,8 +99,17 @@ class OpenABMModelAdapter:
         """Advance one simulation step and return one-step extracted outputs."""
         self.model.one_time_step()
         results = self.model.one_time_step_results()
+        total_case = float(results.get("total_case", 0.0))
+        if self._last_total_case is None:
+            daily_cases = total_case
+        else:
+            daily_cases = total_case - float(self._last_total_case)
+        self._last_total_case = total_case
+        if daily_cases < 0:
+            daily_cases = 0.0
         step_data = {
-            "cases": float(results.get("total_case", 0.0)),
+            "cases": float(daily_cases),
+            "cases_cumulative": float(total_case),
             "infected": float(results.get("total_infected", 0.0)),
             "deaths": float(results.get("total_death", 0.0)),
         }
@@ -153,6 +169,65 @@ def create_openabm_model(
 def extract_openabm_outputs(model_adapter: OpenABMModelAdapter) -> Dict[str, List[float]]:
     """Extract accumulated outputs from an OpenABM adapter instance."""
     return model_adapter.get_outputs()
+
+
+def apply_runtime_interventions_to_openabm(
+    model_adapter: OpenABMModelAdapter,
+    compiled_effects: Dict[str, Any],
+    strict: bool = True,
+) -> Dict[str, List[Dict[str, Any]]]:
+    """
+    Apply already-compiled runtime effects through OpenABM's supported runtime API.
+
+    Returns a diagnostics dict with applied and unsupported effects.
+    """
+    allowed = set(supported_runtime_update_params())
+    applied: List[Dict[str, Any]] = []
+    unsupported: List[Dict[str, Any]] = []
+
+    for effect in compiled_effects.get("applied_effects", []):
+        target = getattr(effect, "target", None)
+        value = getattr(effect, "value", None)
+        metadata = dict(getattr(effect, "metadata", {}) or {})
+
+        if not isinstance(target, str) or target == "":
+            message = "Invalid runtime effect target"
+            if strict:
+                raise RuntimeError(message)
+            unsupported.append({"target": str(target), "value": value, "metadata": metadata, "reason": message})
+            continue
+
+        if allowed and target not in allowed:
+            message = f"Unsupported runtime effect target '{target}'"
+            if strict:
+                raise RuntimeError(message)
+            unsupported.append({"target": target, "value": value, "metadata": metadata, "reason": message})
+            continue
+
+        try:
+            model_adapter.model.update_running_params(target, value)
+            model_adapter.applied_params[target] = value
+            applied.append({"target": target, "value": float(value), "metadata": metadata})
+        except Exception as exc:
+            message = f"Failed to apply runtime effect '{target}': {exc}"
+            if strict:
+                raise RuntimeError(message) from exc
+            unsupported.append({"target": target, "value": value, "metadata": metadata, "reason": message})
+
+    for effect in compiled_effects.get("unsupported_effects", []):
+        unsupported.append(
+            {
+                "target": getattr(effect, "target", None),
+                "value": getattr(effect, "value", None),
+                "metadata": dict(getattr(effect, "metadata", {}) or {}),
+                "reason": "placeholder_not_runtime_wired",
+            }
+        )
+
+    return {
+        "applied_effects": applied,
+        "unsupported_effects": unsupported,
+    }
 
 
 def create_openabm_runner_components(

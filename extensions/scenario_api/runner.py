@@ -136,6 +136,24 @@ def _scale_timeseries_values(series: Any, factor: float, name_suffix: str = "sca
     )
 
 
+def _get_external_network_multiplier(
+    external_network_multipliers_by_t: Optional[Dict[str, List[float]]],
+    network: str,
+    t: int,
+) -> float:
+    if not external_network_multipliers_by_t:
+        return 1.0
+    values = external_network_multipliers_by_t.get(network)
+    if not values:
+        return 1.0
+    if t < 0 or t >= len(values):
+        return 1.0
+    value = float(values[t])
+    if value <= 0:
+        return 1.0
+    return value
+
+
 def run_single_shp_cases_scenario(
     region_config: RegionConfig,
     timeline_events: List[Any],
@@ -151,6 +169,8 @@ def run_single_shp_cases_scenario(
     result_extractor: Optional[Callable] = None,
     initial_infected: int = 100,
     strict_runtime_updates: bool = True,
+    external_network_multipliers_by_t: Optional[Dict[str, List[float]]] = None,
+    infectious_rate: Optional[float] = None,
 ) -> tuple[SimulationResult, Any]:
     """Run one independent SHP scenario and return raw result plus scaled simulated cases."""
     if region_config.simulated_population <= 0:
@@ -161,6 +181,8 @@ def run_single_shp_cases_scenario(
         raise ValueError("initial_infected must be an integer")
     if initial_infected < 0:
         raise ValueError("initial_infected must be >= 0")
+    if infectious_rate is not None and float(infectious_rate) <= 0:
+        raise ValueError("infectious_rate must be > 0 when provided")
 
     supported_events = [e for e in timeline_events if getattr(e, "event_type", None) in SUPPORTED_EVENT_TYPES]
     skipped_events = len(timeline_events) - len(supported_events)
@@ -185,6 +207,12 @@ def run_single_shp_cases_scenario(
     transmission_events: List[TimelineEvent] = []
     for t in range(steps):
         multipliers = compile_network_multipliers(intervention_set, t=t)
+        for network_name in list(multipliers.keys()):
+            multipliers[network_name] = float(multipliers[network_name]) * _get_external_network_multiplier(
+                external_network_multipliers_by_t,
+                network_name,
+                t,
+            )
         agg = _aggregate_network_multiplier(multipliers, network_weights=network_weights)
         transmission_events.append(
             TimelineEvent(
@@ -196,13 +224,17 @@ def run_single_shp_cases_scenario(
             )
         )
 
+    base_params = {
+        "relative_transmission": 1.0,
+        "testing_rate": 1.0,
+        "initial_infected": int(initial_infected),
+    }
+    if infectious_rate is not None:
+        base_params["infectious_rate"] = float(infectious_rate)
+
     scenario = create_scenario(
         name=f"single_shp_{region_config.name.replace(' ', '_')}",
-        base_params={
-            "relative_transmission": 1.0,
-            "testing_rate": 1.0,
-            "initial_infected": int(initial_infected),
-        },
+        base_params=base_params,
         events=transmission_events,
     )
     resolved = resolve_scenario(scenario)
@@ -237,6 +269,15 @@ def run_single_shp_cases_scenario(
         for t in range(steps):
             active_interventions = intervention_set.active_at(t)
             compiled = compile_runtime_effects(intervention_set, t=t)
+            work_ext = _get_external_network_multiplier(external_network_multipliers_by_t, "work", t)
+            school_ext = _get_external_network_multiplier(external_network_multipliers_by_t, "school", t)
+            random_ext = _get_external_network_multiplier(external_network_multipliers_by_t, "random", t)
+            occupation_ext = (1.0 - 0.3) * work_ext + 0.3 * school_ext
+            for effect in compiled.get("applied_effects", []):
+                if getattr(effect, "target", None) == "relative_transmission_occupation":
+                    effect.value = float(effect.value) * float(occupation_ext)
+                elif getattr(effect, "target", None) == "relative_transmission_random":
+                    effect.value = float(effect.value) * float(random_ext)
             applied_report = apply_runtime_interventions_to_openabm(
                 model_adapter=model,
                 compiled_effects=compiled,
@@ -311,6 +352,7 @@ def run_single_shp_cases_scenario(
             "mapped_interventions": len(mapped_interventions),
             "openabm_used": openabm_used,
             "initial_infected": int(initial_infected),
+            "infectious_rate": float(infectious_rate) if infectious_rate is not None else None,
             "seed_override_applied": bool(seed_override_applied) if openabm_used else True,
             "openabm_n_seed_infection": openabm_n_seed_infection,
             "runtime_diagnostics": {

@@ -64,6 +64,14 @@ from .execution_pipeline import (
     run_region_scenario_against_observed,
     compute_r_proxy_from_incidence,
     compute_smoothed_r_proxy,
+    run_baseline_r0_calibration_scenario,
+    run_reff_calibration_scenario,
+)
+from .mobility import (
+    mobility_to_work_multiplier,
+    mobility_to_random_multiplier,
+    load_google_mobility_table,
+    build_mobility_driven_network_multipliers,
 )
 from .timeline import (
     TimelineEvent as PolicyTimelineEvent,
@@ -138,6 +146,9 @@ __all__ = [
     "scale_timeseries_values", "run_region_scenario_against_observed",
     "compute_r_proxy_from_incidence",
     "compute_smoothed_r_proxy",
+    "run_baseline_r0_calibration_scenario", "run_reff_calibration_scenario",
+    "mobility_to_work_multiplier", "mobility_to_random_multiplier",
+    "load_google_mobility_table", "build_mobility_driven_network_multipliers",
     "PolicyTimelineEvent", "load_timeline_events_from_processed",
     "timeline_events_to_table", "filter_timeline_events",
     "OXCGRT_COMPACT_CSV_URL", "OXCGRT_EVENT_TYPE_TO_COLUMNS",

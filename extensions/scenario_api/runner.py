@@ -109,7 +109,7 @@ def _aggregate_network_multiplier(
 ) -> float:
     # Explicit first-pass default weights for converting network multipliers into
     # one relative_transmission multiplier for the single-SHP bridge mode.
-    weights = network_weights or {"work": 0.35, "school": 0.15, "random": 0.50}
+    weights = network_weights or {"household": 0.25, "work": 0.35, "school": 0.15, "random": 0.25}
     total_weight = 0.0
     total_value = 0.0
     for network, weight in weights.items():
@@ -170,6 +170,7 @@ def run_single_shp_cases_scenario(
     initial_infected: int = 100,
     strict_runtime_updates: bool = True,
     external_network_multipliers_by_t: Optional[Dict[str, List[float]]] = None,
+    occupation_school_weight: float = 0.3,
     infectious_rate: Optional[float] = None,
 ) -> tuple[SimulationResult, Any]:
     """Run one independent SHP scenario and return raw result plus scaled simulated cases."""
@@ -183,6 +184,8 @@ def run_single_shp_cases_scenario(
         raise ValueError("initial_infected must be >= 0")
     if infectious_rate is not None and float(infectious_rate) <= 0:
         raise ValueError("infectious_rate must be > 0 when provided")
+    if not 0.0 <= float(occupation_school_weight) <= 1.0:
+        raise ValueError("occupation_school_weight must be in [0,1]")
 
     supported_events = [e for e in timeline_events if getattr(e, "event_type", None) in SUPPORTED_EVENT_TYPES]
     skipped_events = len(timeline_events) - len(supported_events)
@@ -207,12 +210,15 @@ def run_single_shp_cases_scenario(
     transmission_events: List[TimelineEvent] = []
     for t in range(steps):
         multipliers = compile_network_multipliers(intervention_set, t=t)
-        for network_name in list(multipliers.keys()):
-            multipliers[network_name] = float(multipliers[network_name]) * _get_external_network_multiplier(
-                external_network_multipliers_by_t,
-                network_name,
-                t,
-            )
+        if external_network_multipliers_by_t:
+            for network_name in external_network_multipliers_by_t.keys():
+                base = float(multipliers.get(network_name, 1.0))
+                ext = _get_external_network_multiplier(
+                    external_network_multipliers_by_t,
+                    network_name,
+                    t,
+                )
+                multipliers[network_name] = base * ext
         agg = _aggregate_network_multiplier(multipliers, network_weights=network_weights)
         transmission_events.append(
             TimelineEvent(
@@ -268,13 +274,21 @@ def run_single_shp_cases_scenario(
         raw_outputs: Dict[str, List[float]] = {}
         for t in range(steps):
             active_interventions = intervention_set.active_at(t)
-            compiled = compile_runtime_effects(intervention_set, t=t)
+            compiled = compile_runtime_effects(
+                intervention_set,
+                t=t,
+                school_weight_in_occupation=float(occupation_school_weight),
+            )
+            household_ext = _get_external_network_multiplier(external_network_multipliers_by_t, "household", t)
             work_ext = _get_external_network_multiplier(external_network_multipliers_by_t, "work", t)
             school_ext = _get_external_network_multiplier(external_network_multipliers_by_t, "school", t)
             random_ext = _get_external_network_multiplier(external_network_multipliers_by_t, "random", t)
-            occupation_ext = (1.0 - 0.3) * work_ext + 0.3 * school_ext
+            sw = float(occupation_school_weight)
+            occupation_ext = (1.0 - sw) * work_ext + sw * school_ext
             for effect in compiled.get("applied_effects", []):
-                if getattr(effect, "target", None) == "relative_transmission_occupation":
+                if getattr(effect, "target", None) == "relative_transmission_household":
+                    effect.value = float(effect.value) * float(household_ext)
+                elif getattr(effect, "target", None) == "relative_transmission_occupation":
                     effect.value = float(effect.value) * float(occupation_ext)
                 elif getattr(effect, "target", None) == "relative_transmission_random":
                     effect.value = float(effect.value) * float(random_ext)
@@ -353,6 +367,7 @@ def run_single_shp_cases_scenario(
             "openabm_used": openabm_used,
             "initial_infected": int(initial_infected),
             "infectious_rate": float(infectious_rate) if infectious_rate is not None else None,
+            "occupation_school_weight": float(occupation_school_weight),
             "seed_override_applied": bool(seed_override_applied) if openabm_used else True,
             "openabm_n_seed_infection": openabm_n_seed_infection,
             "runtime_diagnostics": {

@@ -89,6 +89,8 @@ def run_region_scenario_against_observed(
     initial_infected: int = 100,
     strict_runtime_updates: bool = True,
     external_network_multipliers_by_t: Optional[Dict[str, list[float]]] = None,
+    network_weights: Optional[Dict[str, float]] = None,
+    occupation_school_weight: float = 0.3,
     infectious_rate: Optional[float] = None,
 ) -> Dict[str, Any]:
     if simulation_steps <= 0:
@@ -149,6 +151,8 @@ def run_region_scenario_against_observed(
         initial_infected=initial_infected,
         strict_runtime_updates=strict_runtime_updates,
         external_network_multipliers_by_t=external_network_multipliers_by_t,
+        network_weights=network_weights,
+        occupation_school_weight=occupation_school_weight,
         infectious_rate=infectious_rate,
     )
     if bool(result.metadata.get("openabm_used", False)) and not bool(
@@ -373,8 +377,12 @@ def run_reff_calibration_scenario(
     initial_infected: int,
     simulated_population: int,
     infectious_rate: float,
-    work_mobility_scale: float,
-    random_mobility_scale: float,
+    household_mobility_scale: float = 1.0,
+    work_mobility_scale: float = 1.0,
+    school_mobility_scale: float = 1.0,
+    random_mobility_scale: float = 1.0,
+    network_weights: Optional[Dict[str, float]] = None,
+    occupation_school_weight: float = 0.3,
     generation_interval: int = 5,
     smoothing_window: int = 7,
     use_openabm: bool = True,
@@ -404,7 +412,9 @@ def run_reff_calibration_scenario(
         mobility_table=mobility_table,
         reference_start_date=reference_start_date,
         end_date=end_date,
+        household_scale=household_mobility_scale,
         work_mobility_scale=work_mobility_scale,
+        school_scale=school_mobility_scale,
         random_mobility_scale=random_mobility_scale,
         work_multiplier_floor=work_multiplier_floor,
         random_multiplier_floor=random_multiplier_floor,
@@ -430,6 +440,8 @@ def run_reff_calibration_scenario(
         initial_infected=int(initial_infected),
         strict_runtime_updates=True,
         external_network_multipliers_by_t=external_multipliers,
+        network_weights=network_weights,
+        occupation_school_weight=occupation_school_weight,
         infectious_rate=float(infectious_rate),
     )
 
@@ -458,8 +470,12 @@ def run_reff_calibration_scenario(
         "mobility_multipliers": external_multipliers,
         "calibration_params": {
             "infectious_rate": float(infectious_rate),
+            "household_mobility_scale": float(household_mobility_scale),
             "work_mobility_scale": float(work_mobility_scale),
+            "school_mobility_scale": float(school_mobility_scale),
             "random_mobility_scale": float(random_mobility_scale),
+            "network_weights": dict(network_weights or {}),
+            "occupation_school_weight": float(occupation_school_weight),
             "initial_infected": int(initial_infected),
             "simulated_population": int(simulated_population),
             "generation_interval": int(generation_interval),

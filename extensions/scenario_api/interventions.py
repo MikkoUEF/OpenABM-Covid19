@@ -217,6 +217,7 @@ def compile_runtime_effects(
     """
     active = interventions.active_at(t)
     multipliers = compile_network_multipliers(interventions, t=t)
+    household = float(multipliers.get("household", 1.0))
     work = float(multipliers.get("work", 1.0))
     school = float(multipliers.get("school", 1.0))
     random = float(multipliers.get("random", 1.0))
@@ -227,6 +228,11 @@ def compile_runtime_effects(
         occupation = (1.0 - sw) * work + sw * school
 
     applied_effects = [
+        CompiledRuntimeEffect(
+            target="relative_transmission_household",
+            value=float(household),
+            metadata={"t": t, "source": "compiled_from_interventions"},
+        ),
         CompiledRuntimeEffect(
             target="relative_transmission_occupation",
             value=float(occupation),

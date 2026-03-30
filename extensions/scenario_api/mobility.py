@@ -81,7 +81,9 @@ def build_mobility_driven_network_multipliers(
     mobility_table: pd.DataFrame,
     reference_start_date: str,
     end_date: str,
+    household_scale: float = 1.0,
     work_mobility_scale: float = 1.0,
+    school_scale: float = 1.0,
     random_mobility_scale: float = 1.0,
     work_multiplier_floor: float = 0.1,
     random_multiplier_floor: float = 0.1,
@@ -104,7 +106,9 @@ def build_mobility_driven_network_multipliers(
     if table.isna().any().any():
         raise ValueError("Mobility table has unresolved missing values after date alignment")
 
+    household_values = [float(household_scale)] * len(table.index)
     work_values = []
+    school_values = [float(school_scale)] * len(table.index)
     random_values = []
     for _, row in table.iterrows():
         work_values.append(
@@ -125,6 +129,8 @@ def build_mobility_driven_network_multipliers(
         )
 
     return {
+        "household": [float(v) for v in household_values],
         "work": [float(v) for v in work_values],
+        "school": [float(v) for v in school_values],
         "random": [float(v) for v in random_values],
     }

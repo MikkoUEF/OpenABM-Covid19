@@ -73,6 +73,19 @@ from .mobility import (
     load_google_mobility_table,
     build_mobility_driven_network_multipliers,
 )
+from .postcode_population import (
+    OPENABM_AGE_BINS,
+    OPENABM_AGE_BIN_LABELS,
+    PopulationSynthesisConfig,
+    PostcodeSynthesisResult,
+    age_to_openabm_bin_label,
+    household_age_histogram,
+    split_age_7_12_uniform,
+    harmonise_age_counts_to_openabm_bins,
+    load_household_templates_from_table,
+    load_paavo_postcode_targets,
+    build_postcode_population,
+)
 from .timeline import (
     TimelineEvent as PolicyTimelineEvent,
     load_timeline_events_from_processed,
@@ -149,6 +162,12 @@ __all__ = [
     "run_baseline_r0_calibration_scenario", "run_reff_calibration_scenario",
     "mobility_to_work_multiplier", "mobility_to_random_multiplier",
     "load_google_mobility_table", "build_mobility_driven_network_multipliers",
+    "OPENABM_AGE_BINS", "OPENABM_AGE_BIN_LABELS",
+    "PopulationSynthesisConfig", "PostcodeSynthesisResult",
+    "age_to_openabm_bin_label", "household_age_histogram",
+    "split_age_7_12_uniform", "harmonise_age_counts_to_openabm_bins",
+    "load_household_templates_from_table", "load_paavo_postcode_targets",
+    "build_postcode_population",
     "PolicyTimelineEvent", "load_timeline_events_from_processed",
     "timeline_events_to_table", "filter_timeline_events",
     "OXCGRT_COMPACT_CSV_URL", "OXCGRT_EVENT_TYPE_TO_COLUMNS",
